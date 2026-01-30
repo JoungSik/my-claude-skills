@@ -44,6 +44,7 @@
 | subagent-driven-development | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | 서브에이전트 기반 개발 - 독립 작업을 병렬로 실행 |
 | terminal-title | [bluzername/claude-code-terminal-title](https://github.com/bluzername/claude-code-terminal-title) | 터미널 창 제목 자동 업데이트 |
 | review-implementing | [mhattingpete/claude-skills-marketplace](https://github.com/mhattingpete/claude-skills-marketplace) | 코드 리뷰 피드백 체계적 처리 및 구현 |
+| plan-generator | 로컬 생성 | 작업 계획 생성 및 관리 - 서브에이전트로 코드 분석 후 계획 문서 생성 |
 
 ## 디렉토리 구조
 
