@@ -29,16 +29,33 @@ fi
 # 대상 디렉토리 생성
 mkdir -p "$SKILLS_DEST"
 
-# frontmatter에서 description 추출
+# 파일 시작의 frontmatter만 추출 (본문 내 --- 무시)
+extract_frontmatter() {
+    local file="$1"
+    # 1행이 ---인 경우에만 두 번째 ---까지 추출
+    awk 'NR==1 && /^---$/ { found=1; next } found && /^---$/ { exit } found { print }' "$file"
+}
+
+# frontmatter에서 description 추출 (YAML 멀티라인 지원)
 extract_description() {
     local file="$1"
-    sed -n '/^---$/,/^---$/p' "$file" | grep -E "^description:" | sed 's/^description:[[:space:]]*//'
+    local frontmatter
+    frontmatter=$(extract_frontmatter "$file")
+    local first_line
+    first_line=$(echo "$frontmatter" | grep -E "^description:" | head -1 | sed 's/^description:[[:space:]]*//')
+
+    if [ "$first_line" = "|" ] || [ "$first_line" = ">" ]; then
+        # 멀티라인: description 다음 줄부터 들여쓰기된 줄들을 합침
+        echo "$frontmatter" | sed -n '/^description:/,/^[^ ]/p' | tail -n +2 | grep -E "^  " | sed 's/^  //' | tr '\n' ' ' | sed 's/[[:space:]]*$//'
+    else
+        echo "$first_line"
+    fi
 }
 
 # frontmatter에서 name 추출
 extract_name() {
     local file="$1"
-    sed -n '/^---$/,/^---$/p' "$file" | grep -E "^name:" | sed 's/^name:[[:space:]]*//'
+    extract_frontmatter "$file" | grep -E "^name:" | head -1 | sed 's/^name:[[:space:]]*//'
 }
 
 # 설치 함수
@@ -57,16 +74,18 @@ install_skill_dir() {
         local filename="$(basename "$file")"
         cp "$file" "$dest_dir/$filename"
         echo -e "${GREEN}✓${NC} $skill_name/$filename"
+    done
 
-        # 스킬 정보 추출 및 저장
-        local desc=$(extract_description "$file")
-        local name=$(extract_name "$file")
+    # 스킬 정보 추출 (SKILL.md에서만)
+    if [ -f "$skill_dir/SKILL.md" ]; then
+        local desc=$(extract_description "$skill_dir/SKILL.md")
+        local name=$(extract_name "$skill_dir/SKILL.md")
         [ -z "$name" ] && name="$skill_name"
 
         if [ -n "$desc" ]; then
-            echo "$name|$desc" >> "$SCRIPT_DIR/.installed_skills.tmp"
+            printf '%s\t%s\n' "$name" "$desc" >> "$SCRIPT_DIR/.installed_skills.tmp"
         fi
-    done
+    fi
 
     # 2. scripts 폴더 복사
     if [ -d "$skill_dir/scripts" ]; then
@@ -104,10 +123,11 @@ update_claude_md() {
         echo "" >> "$CLAUDE_MD"
     fi
 
-    # 기존 스킬 섹션 제거
+    # 기존 스킬 섹션 제거 (파일 끝까지 포함)
     if grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
-        sed -i '' '/^## 설치된 스킬$/,/^## [^설]/{/^## [^설]/!d;}' "$CLAUDE_MD"
-        sed -i '' '/^## 설치된 스킬$/d' "$CLAUDE_MD"
+        sed -i '' '/^## 설치된 스킬$/,$d' "$CLAUDE_MD"
+        # 파일 끝 연속 빈 줄 제거
+        sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$CLAUDE_MD"
     fi
 
     # 새 스킬 섹션 추가
@@ -117,7 +137,7 @@ update_claude_md() {
     echo "다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요." >> "$CLAUDE_MD"
     echo "" >> "$CLAUDE_MD"
 
-    while IFS='|' read -r name desc; do
+    while IFS=$'\t' read -r name desc; do
         echo "### $name" >> "$CLAUDE_MD"
         echo "- 사용 상황: $desc" >> "$CLAUDE_MD"
         echo "- 호출 방법: \`/$name\`" >> "$CLAUDE_MD"
