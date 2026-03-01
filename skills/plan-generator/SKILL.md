@@ -1,6 +1,6 @@
 ---
 name: plan-generator
-description: 작업 계획 생성 및 관리. 복잡한 기능 구현, 리팩토링, 버그 수정 등 계획이 필요한 작업 요청 시 사용. 서브에이전트로 코드 분석 후 계획 문서를 생성하고 피드백을 거쳐 승인 후 작업 시작.
+description: Use when you have a spec or requirements for a multi-step task, before touching code. 복잡한 기능 구현, 리팩토링, 버그 수정 등 계획이 필요한 작업 요청 시 사용. 서브에이전트로 코드 분석 후 계획 문서를 생성하고 피드백을 거쳐 승인 후 작업 시작.
 model: opus
 ---
 
@@ -94,12 +94,37 @@ Task tool (subagent_type: Explore):
 
 ### Task 1: [작업명]
 - **목표:** [이 작업의 목표]
-- **수정 파일:** [파일 목록]
-- **파일 생성 방법:** [CLI 명령어 명시 | 직접 생성]
-- **상세 내용:**
-  1. [세부 단계 1]
-  2. [세부 단계 2]
-- **검증:** [확인 방법]
+- **파일:**
+  - Create: `exact/path/to/file.py`
+  - Modify: `exact/path/to/existing.py:123-145`
+  - Test: `tests/exact/path/to/test.py`
+
+**Step 1: 실패하는 테스트 작성**
+```python
+def test_specific_behavior():
+    result = function(input)
+    assert result == expected
+```
+
+**Step 2: 테스트 실패 확인**
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: FAIL
+
+**Step 3: 최소 구현**
+```python
+def function(input):
+    return expected
+```
+
+**Step 4: 테스트 통과 확인**
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+**Step 5: 커밋**
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
 
 ### Task 2: [작업명]
 ...
@@ -156,8 +181,19 @@ AskUserQuestion 도구 사용:
 
 **승인 후:**
 - 계획 문서 상단에 `status: approved` 추가
-- subagent-driven-development 스킬로 작업 실행
-- 또는 계획에 따라 직접 구현 시작
+- 실행 방식 선택:
+
+```
+AskUserQuestion 도구 사용:
+  question: "실행 방식을 선택해주세요"
+  options:
+    - label: "Subagent Mode"
+      description: "현재 세션에서 태스크당 서브에이전트 + 자동 리뷰"
+    - label: "Batch Mode"
+      description: "3개씩 배치 실행, 배치마다 사람이 검토"
+```
+
+- **REQUIRED SUB-SKILL:** superpowers:subagent-driven-development 로 실행
 
 ## 계획 문서 관리
 
@@ -186,6 +222,14 @@ created: 2026-01-31
 updated: 2026-01-31
 ---
 ```
+
+## 태스크 작성 원칙
+
+- 각 step은 하나의 액션 (2-5분)
+- 정확한 파일 경로 명시
+- 완전한 코드 포함 ("유효성 검증 추가" 같은 추상적 표현 금지)
+- 실행 명령어와 예상 출력 명시
+- DRY, YAGNI, TDD, 잦은 커밋
 
 ## 주의사항
 

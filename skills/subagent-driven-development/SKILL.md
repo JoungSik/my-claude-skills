@@ -1,13 +1,13 @@
 ---
 name: subagent-driven-development
-description: Use when executing implementation plans with independent tasks in the current session
+description: Use when executing implementation plans - supports both subagent-per-task mode (current session) and batch execution mode (with review checkpoints)
 ---
 
-# Subagent-Driven Development
+# Plan Execution
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Execute implementation plans with two modes: **Subagent Mode** (fresh subagent per task, automated review) or **Batch Mode** (batched execution with human review checkpoints).
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** Plan → Execute → Review → Repeat
 
 ## When to Use
 
@@ -15,25 +15,26 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 digraph when_to_use {
     "Have implementation plan?" [shape=diamond];
     "Tasks mostly independent?" [shape=diamond];
-    "Stay in this session?" [shape=diamond];
-    "subagent-driven-development" [shape=box];
-    "executing-plans" [shape=box];
+    "Want automated review?" [shape=diamond];
+    "Subagent Mode" [shape=box];
+    "Batch Mode" [shape=box];
     "Manual execution or brainstorm first" [shape=box];
 
     "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
     "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
-    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
+    "Tasks mostly independent?" -> "Want automated review?" [label="yes"];
     "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
-    "Stay in this session?" -> "subagent-driven-development" [label="yes"];
-    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+    "Want automated review?" -> "Subagent Mode" [label="yes - fast iteration"];
+    "Want automated review?" -> "Batch Mode" [label="no - human review preferred"];
 }
 ```
 
-**vs. Executing Plans (parallel session):**
-- Same session (no context switch)
-- Fresh subagent per task (no context pollution)
-- Two-stage review after each task: spec compliance first, then code quality
-- Faster iteration (no human-in-loop between tasks)
+| | Subagent Mode | Batch Mode |
+|---|---|---|
+| **실행 방식** | 태스크당 서브에이전트 1개 | 3개씩 배치 실행 |
+| **리뷰** | 자동 2단계 (스펙 + 품질) | 배치마다 사람이 검토 |
+| **속도** | 빠름 (human-in-loop 없음) | 느림 (검토 대기) |
+| **적합한 경우** | 독립적 태스크, 빠른 반복 | 신중한 검토 필요 시 |
 
 ## The Process
 
@@ -227,16 +228,29 @@ Done!
 - Dispatch fix subagent with specific instructions
 - Don't try to fix manually (context pollution)
 
+## Batch Mode
+
+배치 실행 + 사람 검토 체크포인트 방식. 신중한 검토가 필요할 때 사용.
+
+### Process
+
+1. **Load and Review Plan**: 계획 파일 읽기 → 문제점 있으면 먼저 제기
+2. **Execute Batch (3 tasks)**: 태스크별로 mark in_progress → 단계 실행 → 검증 → mark completed
+3. **Report**: 구현 내용 + 검증 결과 보여주고 "Ready for feedback." 선언
+4. **Continue**: 피드백 반영 → 다음 배치 → 완료까지 반복
+
+**Stop and Ask:**
+- 블로커 발생 (의존성 누락, 테스트 실패, 지시 불명확)
+- 계획에 치명적 빈틈
+- 검증 반복 실패
+
 ## Integration
 
 **Required workflow skills:**
 - **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
-- **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:plan-generator** - Creates the plan this skill executes
 - **superpowers:requesting-code-review** - Code review template for reviewer subagents
 - **superpowers:finishing-a-development-branch** - Complete development after all tasks
 
 **Subagents should use:**
 - **superpowers:test-driven-development** - Subagents follow TDD for each task
-
-**Alternative workflow:**
-- **superpowers:executing-plans** - Use for parallel session instead of same-session execution

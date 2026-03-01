@@ -1,6 +1,6 @@
 ---
 name: receiving-code-review
-description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+description: Use when receiving code review feedback, PR feedback, reviewer comments, or asks to implement suggestions from reviews - requires technical rigor and verification, not performative agreement or blind implementation
 ---
 
 # Code Review Reception
@@ -97,17 +97,24 @@ IF reviewer suggests "implementing properly":
 
 **your human partner's rule:** "You and reviewer both report to me. If we don't need this feature, don't add it."
 
-## Implementation Order
+## Implementation Workflow
 
 ```
 FOR multi-item feedback:
-  1. Clarify anything unclear FIRST
-  2. Then implement in this order:
+  1. Parse feedback into individual items
+     - Split numbered lists, bullet points
+     - Extract distinct change requests
+  2. Clarify anything unclear FIRST
+  3. Create TodoWrite with all items
+     - Each feedback item → one or more todos
+     - Mark first as in_progress
+  4. Implement in priority order:
      - Blocking issues (breaks, security)
      - Simple fixes (typos, imports)
      - Complex fixes (refactoring, logic)
-  3. Test each fix individually
-  4. Verify no regressions
+  5. Per item: implement → test → mark completed → next
+     - Only one in_progress at a time
+  6. Verify no regressions after all items
 ```
 
 ## When To Push Back
