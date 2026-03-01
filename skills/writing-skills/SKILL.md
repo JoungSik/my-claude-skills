@@ -1,6 +1,6 @@
 ---
 name: writing-skills
-description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
+description: Use when creating new skills, editing existing skills, adding external skills with duplicate detection and merge, or verifying skills work before deployment
 ---
 
 # Writing Skills
@@ -71,15 +71,18 @@ API docs, syntax guides, tool documentation (office docs)
 
 ## Directory Structure
 
-
 ```
-skills/
-  skill-name/
-    SKILL.md              # Main reference (required)
-    supporting-file.*     # Only if needed
+skill-name/
+├── SKILL.md              # Main reference (required)
+├── scripts/              # Executable code (Python/Bash)
+├── references/           # Documentation loaded as needed
+└── assets/               # Files used in output (templates, icons)
 ```
 
-**Flat namespace** - all skills in one searchable namespace
+**Progressive Disclosure:** Skills use 3-level loading for context efficiency:
+1. **Metadata (name + description)** - Always in context (~100 words)
+2. **SKILL.md body** - When skill triggers (<5k words)
+3. **Bundled resources** - As needed (scripts can execute without reading into context)
 
 **Separate files for:**
 1. **Heavy reference** (100+ lines) - API docs, comprehensive syntax
@@ -89,6 +92,87 @@ skills/
 - Principles and concepts
 - Code patterns (< 50 lines)
 - Everything else
+
+## Scaffolding Tools
+
+새 스킬 생성 시 `scripts/init_skill.py`로 스캐폴딩:
+
+```bash
+scripts/init_skill.py <skill-name> --path <output-directory>
+```
+
+스킬 패키징 및 검증:
+
+```bash
+scripts/package_skill.py <path/to/skill-folder>       # 검증 + zip 패키징
+scripts/quick_validate.py <path/to/skill-folder>       # 검증만
+```
+
+## 외부 스킬 추가 및 중복 병합
+
+외부 스킬(git 저장소, 다른 프로젝트 등)을 추가할 때 기존 스킬과의 중복을 감지하고 필요시 병합하는 워크플로우.
+
+### 워크플로우
+
+```
+1. 새 스킬 클론 (add.sh 또는 git clone)
+2. 새 스킬의 SKILL.md description 읽기
+3. 기존 skills/* 전체의 SKILL.md description 읽기
+4. 의미 분석으로 중복 후보 식별
+5. 중복 없음 → 완료
+6. 중복 있음 → 사용자에게 보고 + 선택지 제시
+7. 병합 선택 시 → 기존 스킬에 통합 후 새 스킬 디렉토리 삭제
+```
+
+### 중복 판단 기준
+
+Claude가 의미 분석으로 판단한다. bash 키워드 매칭은 부정확하므로 사용하지 않는다.
+
+**중복으로 판단:**
+- 목적/용도가 동일하거나 하나가 다른 하나를 완전히 포함
+- 같은 상황에서 트리거되는 스킬 (description의 "Use when..." 조건이 동일)
+
+**중복이 아닌 것:**
+- 단순히 관련 있는 정도 (예: test-driven-development와 verification-before-completion)
+- 같은 도메인이지만 다른 단계를 다루는 스킬
+- 부분적으로 겹치지만 각각 고유 영역이 있는 스킬
+
+### 중복 감지 절차
+
+1. 새로 추가된 스킬의 SKILL.md에서 `name`, `description`, 본문의 Overview/When to Use 섹션을 읽는다
+2. `skills/*/SKILL.md`의 frontmatter description을 모두 읽는다
+3. 의미적으로 동일한 목적을 가진 스킬이 있는지 판단한다
+4. 중복 후보가 있으면 사용자에게 보고한다:
+
+```
+중복 후보 발견:
+- 새 스킬: <새-스킬-이름> - "<description>"
+- 기존 스킬: <기존-스킬-이름> - "<description>"
+- 판단 근거: <왜 중복으로 보는지>
+```
+
+5. 사용자에게 선택지를 제시한다:
+   - **그대로 추가**: 새 스킬을 별도로 유지
+   - **기존 스킬에 병합**: 기존 스킬에 새 내용 통합, 새 스킬 삭제
+   - **취소**: 새 스킬 삭제
+
+### 병합 원칙
+
+병합 선택 시 다음 원칙을 따른다:
+
+1. **더 포괄적인 스킬이 기본** — 범위가 넓은 쪽을 기반으로 유지
+2. **새 스킬에만 있는 고유 내용을 통합** — 기존 스킬의 구조에 맞게 섹션 추가/확장
+3. **부가 파일 이동** — scripts/, references/, assets/ 등을 기존 스킬 디렉토리로 이동
+4. **description 업데이트** — 병합된 내용을 반영하여 트리거 조건 확장 (필요시)
+5. **참조 업데이트** — 다른 스킬에서 삭제된 스킬을 참조하고 있다면 기존 스킬로 참조 변경
+6. **새 스킬 디렉토리 삭제** — 병합 완료 후 `rm -rf skills/<새-스킬-이름>`
+7. **install.sh 재실행** — 병합 결과를 `~/.claude/skills/`에 반영
+
+### 병합 후 검증
+
+- `./install.sh` 실행하여 정상 설치 확인
+- 병합된 스킬의 SKILL.md가 유효한 frontmatter를 가지는지 확인
+- 삭제된 스킬에 대한 참조가 남아있지 않은지 확인
 
 ## SKILL.md Structure
 

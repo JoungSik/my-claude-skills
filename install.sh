@@ -123,26 +123,50 @@ update_claude_md() {
         echo "" >> "$CLAUDE_MD"
     fi
 
-    # 기존 스킬 섹션 제거 (파일 끝까지 포함)
-    if grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
-        sed -i '' '/^## 설치된 스킬$/,$d' "$CLAUDE_MD"
-        # 파일 끝 연속 빈 줄 제거
-        sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$CLAUDE_MD"
-    fi
+    if [ -n "$TARGET" ]; then
+        # 단일 스킬 설치: 해당 항목만 업데이트
+        while IFS=$'\t' read -r name desc; do
+            # 섹션이 없으면 새로 생성
+            if ! grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
+                echo "" >> "$CLAUDE_MD"
+                echo "## 설치된 스킬" >> "$CLAUDE_MD"
+                echo "" >> "$CLAUDE_MD"
+                echo "다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요." >> "$CLAUDE_MD"
+                echo "" >> "$CLAUDE_MD"
+            fi
 
-    # 새 스킬 섹션 추가
-    echo "" >> "$CLAUDE_MD"
-    echo "## 설치된 스킬" >> "$CLAUDE_MD"
-    echo "" >> "$CLAUDE_MD"
-    echo "다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요." >> "$CLAUDE_MD"
-    echo "" >> "$CLAUDE_MD"
+            # 기존 항목 제거 (있으면): ### name 부터 다음 빈 줄까지
+            if grep -q "^### ${name}$" "$CLAUDE_MD"; then
+                sed -i '' "/^### ${name}$/,/^$/d" "$CLAUDE_MD"
+            fi
 
-    while IFS=$'\t' read -r name desc; do
-        echo "### $name" >> "$CLAUDE_MD"
-        echo "- 사용 상황: $desc" >> "$CLAUDE_MD"
-        echo "- 호출 방법: \`/$name\`" >> "$CLAUDE_MD"
+            # 파일 끝에 새 항목 추가
+            echo "### $name" >> "$CLAUDE_MD"
+            echo "- 사용 상황: $desc" >> "$CLAUDE_MD"
+            echo "- 호출 방법: \`/$name\`" >> "$CLAUDE_MD"
+            echo "" >> "$CLAUDE_MD"
+        done < "$tmp_file"
+    else
+        # 전체 설치: 기존 섹션 제거 후 재생성
+        if grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
+            sed -i '' '/^## 설치된 스킬$/,$d' "$CLAUDE_MD"
+            # 파일 끝 연속 빈 줄 제거
+            sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$CLAUDE_MD"
+        fi
+
         echo "" >> "$CLAUDE_MD"
-    done < "$tmp_file"
+        echo "## 설치된 스킬" >> "$CLAUDE_MD"
+        echo "" >> "$CLAUDE_MD"
+        echo "다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요." >> "$CLAUDE_MD"
+        echo "" >> "$CLAUDE_MD"
+
+        while IFS=$'\t' read -r name desc; do
+            echo "### $name" >> "$CLAUDE_MD"
+            echo "- 사용 상황: $desc" >> "$CLAUDE_MD"
+            echo "- 호출 방법: \`/$name\`" >> "$CLAUDE_MD"
+            echo "" >> "$CLAUDE_MD"
+        done < "$tmp_file"
+    fi
 
     rm -f "$tmp_file"
     echo -e "${GREEN}✓${NC} CLAUDE.md 업데이트 완료"
@@ -166,6 +190,19 @@ else
     # 전체 설치
     echo "전체 스킬 설치"
     echo "------------------------------------------"
+
+    # 소스에 없는 기존 스킬 제거
+    if [ -d "$SKILLS_DEST" ]; then
+        for dest_skill_dir in "$SKILLS_DEST"/*/; do
+            [ ! -d "$dest_skill_dir" ] && continue
+            local_name="$(basename "$dest_skill_dir")"
+            if [ ! -d "$SKILLS_SRC/$local_name" ]; then
+                rm -rf "$dest_skill_dir"
+                echo -e "${YELLOW}✗${NC} $local_name (소스에 없어 제거됨)"
+            fi
+        done
+    fi
+
     for skill_dir in "$SKILLS_SRC"/*/; do
         [ -d "$skill_dir" ] && install_skill_dir "$skill_dir"
     done
