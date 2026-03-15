@@ -97,6 +97,24 @@ IF reviewer suggests "implementing properly":
 
 **your human partner's rule:** "You and reviewer both report to me. If we don't need this feature, don't add it."
 
+### YAGNI vs 방어적 코딩 구분
+
+YAGNI는 "사용하지 않는 기능을 만들지 마라"이지, "알려진 경계 조건을 무시하라"가 아니다.
+
+```
+YAGNI 적용 대상 (현재 사용 여부로 판단):
+  - 새 기능/엔드포인트 추가
+  - 사용하지 않는 설정/옵션 추가
+  - 호출되지 않는 코드 작성
+
+YAGNI 적용 불가 (방어적 코딩, 항상 반영):
+  - 동일 전제를 공유하는 항목 간 일관성
+  - 데이터 정합성 보호 (트랜잭션, 유니크 제약)
+  - 알려진 확장 지점의 경계 조건 처리
+```
+
+**일관성 규칙:** 리뷰 항목 A를 "미래 시나리오 X 때문에 반영"했다면, 동일한 시나리오 X를 전제로 하는 항목 B를 "현재 규모에서 불필요"로 무시하면 안 된다. 동일 전제 → 동일 판단.
+
 ## Implementation Workflow
 
 ```
