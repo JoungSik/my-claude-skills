@@ -32,7 +32,22 @@ uninstall_skill() {
     fi
 }
 
-# CLAUDE.md에서 스킬 섹션 제거
+# CLAUDE.md에서 단일 스킬 항목 제거
+remove_single_skill_entry() {
+    local skill_name="$1"
+
+    if [ ! -f "$CLAUDE_MD" ]; then
+        return
+    fi
+
+    if grep -q "^### ${skill_name}$" "$CLAUDE_MD"; then
+        # ### skill-name 부터 다음 빈 줄까지 제거
+        sed -i '' "/^### ${skill_name}$/,/^$/d" "$CLAUDE_MD"
+        echo -e "${GREEN}✓${NC} CLAUDE.md에서 '$skill_name' 항목 제거 완료"
+    fi
+}
+
+# CLAUDE.md에서 "## 설치된 스킬" 섹션 전체 제거
 remove_skill_section() {
     if [ ! -f "$CLAUDE_MD" ]; then
         return
@@ -79,7 +94,11 @@ fi
 find "$SKILLS_DEST" -type d -empty -delete 2>/dev/null
 
 # CLAUDE.md 정리
-remove_skill_section
+if [ -n "$TARGET" ]; then
+    remove_single_skill_entry "$TARGET"
+else
+    remove_skill_section
+fi
 
 echo "------------------------------------------"
 echo -e "${GREEN}제거 완료!${NC}"
