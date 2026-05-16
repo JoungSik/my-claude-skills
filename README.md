@@ -40,7 +40,6 @@
 |------|-------------|------|
 | prompt-engineering | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | 프롬프트 엔지니어링 및 에이전트 커뮤니케이션 가이드 |
 | skill-creator | [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) | 효과적인 스킬 생성 가이드 |
-| software-architecture | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | Clean Architecture 및 DDD 기반 소프트웨어 아키텍처 가이드 |
 | subagent-driven-development | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | 서브에이전트 기반 개발 - 독립 작업을 병렬로 실행 |
 | terminal-title | [bluzername/claude-code-terminal-title](https://github.com/bluzername/claude-code-terminal-title) | 터미널 창 제목 자동 업데이트 |
 | review-implementing | [mhattingpete/claude-skills-marketplace](https://github.com/mhattingpete/claude-skills-marketplace) | 코드 리뷰 피드백 체계적 처리 및 구현 |
