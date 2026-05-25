@@ -1,0 +1,6 @@
+# 머신 한정 로컬 설정 (권한 목록·절대경로 포함) — 커밋 금지
+home/.claude/settings.local.json
+
+# 백업·임시 파일
+*.bak
+.installed_skills.tmp

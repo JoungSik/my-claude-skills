@@ -1,6 +1,6 @@
 # my-claude-skills
 
-외부 Claude Code 스킬 저장소를 수집하고 일괄 설치하는 관리 도구입니다.
+Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~/.claude/`)을 버전 관리하는 도구입니다.
 
 ## 사용법
 
@@ -34,6 +34,17 @@
 ./list.sh
 ```
 
+## 전역 설정 관리
+
+`~/.claude/`의 전역 설정을 레포와 동기화합니다. 관리 대상은 `CLAUDE.md`(전역 지침)와 `settings.json`입니다. `settings.local.json`은 머신 한정 권한·절대경로를 담고 있어 `.gitignore`로 제외됩니다.
+
+```bash
+./config.sh backup   # ~/.claude/ → 레포 (로컬 설정을 레포에 반영, 커밋 전 실행)
+./config.sh deploy   # 레포 → ~/.claude/ (레포 설정을 새 머신에 적용)
+```
+
+`deploy`는 덮어쓰기 전에 기존 파일을 `<파일>.bak`로 백업합니다.
+
 ## 수집된 스킬 목록
 
 | 이름 | 원본 저장소 | 설명 |
@@ -48,11 +59,15 @@
 ```
 my-claude-skills/
 ├── README.md           # 이 파일
-├── CLAUDE.md           # Claude Code 프로젝트 설정
+├── CLAUDE.md           # 이 레포 자체의 Claude Code 설정
 ├── add.sh              # 외부 스킬 저장소 추가
 ├── install.sh          # 스킬 설치
 ├── uninstall.sh        # 스킬 제거
 ├── list.sh             # 스킬 목록 확인
+├── config.sh           # 전역 설정 backup/deploy
+├── home/.claude/       # 버전 관리되는 전역 설정
+│   ├── CLAUDE.md       # 전역 지침
+│   └── settings.json   # 전역 설정
 └── skills/             # 수집된 스킬 저장소들
     ├── skill-a/
     ├── skill-b/
