@@ -38,6 +38,20 @@ uninstall_skill() {
     fi
 }
 
+# BSD/GNU sed의 -i 문법 차이를 피하기 위해 임시 파일 경유로 수정
+sed_in_place() {
+    local file="$1"
+    shift
+    local tmp_file
+    tmp_file=$(mktemp) || return 1
+    sed "$@" "$file" > "$tmp_file" && cat "$tmp_file" > "$file"
+    rm -f "$tmp_file"
+}
+
+trim_trailing_blank_lines() {
+    sed_in_place "$1" -e :a -e '/^\n*$/{$d;N;ba' -e '}'
+}
+
 # shared.md에서 단일 스킬 항목 제거
 remove_single_skill_entry() {
     local skill_name="$1"
@@ -48,8 +62,8 @@ remove_single_skill_entry() {
 
     if grep -q "^### ${skill_name}$" "$SHARED_MD"; then
         # ### skill-name 부터 다음 빈 줄까지 제거
-        sed -i '' "/^### ${skill_name}$/,/^$/d" "$SHARED_MD"
-        sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$SHARED_MD"
+        sed_in_place "$SHARED_MD" "/^### ${skill_name}$/,/^$/d"
+        trim_trailing_blank_lines "$SHARED_MD"
         echo -e "${GREEN}✓${NC} shared.md에서 '$skill_name' 항목 제거 완료"
     fi
 }
@@ -72,10 +86,10 @@ remove_skill_section() {
             !skip { print }
         ' "$SHARED_MD" > "$tmp_file"
 
-        # 파일 끝의 빈 줄 정리
-        sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp_file"
-
-        mv "$tmp_file" "$SHARED_MD"
+        # 권한·심볼릭 링크 유지를 위해 mv 대신 내용만 덮어씀
+        cat "$tmp_file" > "$SHARED_MD"
+        rm -f "$tmp_file"
+        trim_trailing_blank_lines "$SHARED_MD"
         echo -e "${GREEN}✓${NC} shared.md에서 스킬 섹션 제거 완료"
     fi
 }

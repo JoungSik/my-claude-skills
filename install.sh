@@ -102,8 +102,18 @@ record_installed() {
     grep -qxF "$skill_name" "$INSTALLED_MANIFEST" || echo "$skill_name" >> "$INSTALLED_MANIFEST"
 }
 
+# BSD/GNU sed의 -i 문법 차이를 피하기 위해 임시 파일 경유로 수정
+sed_in_place() {
+    local file="$1"
+    shift
+    local tmp_file
+    tmp_file=$(mktemp) || return 1
+    sed "$@" "$file" > "$tmp_file" && cat "$tmp_file" > "$file"
+    rm -f "$tmp_file"
+}
+
 trim_trailing_blank_lines() {
-    sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$SHARED_MD"
+    sed_in_place "$SHARED_MD" -e :a -e '/^\n*$/{$d;N;ba' -e '}'
 }
 
 append_skill_section_header() {
@@ -139,7 +149,7 @@ update_shared_md() {
 
             # 기존 항목 제거 (있으면): ### name 부터 다음 빈 줄까지
             if grep -q "^### ${name}$" "$SHARED_MD"; then
-                sed -i '' "/^### ${name}$/,/^$/d" "$SHARED_MD"
+                sed_in_place "$SHARED_MD" "/^### ${name}$/,/^$/d"
                 trim_trailing_blank_lines
             fi
 
@@ -148,7 +158,7 @@ update_shared_md() {
     else
         # 전체 설치: 기존 섹션 제거 후 재생성
         if grep -q "^## 설치된 스킬" "$SHARED_MD"; then
-            sed -i '' '/^## 설치된 스킬$/,$d' "$SHARED_MD"
+            sed_in_place "$SHARED_MD" '/^## 설치된 스킬$/,$d'
             trim_trailing_blank_lines
         fi
 
