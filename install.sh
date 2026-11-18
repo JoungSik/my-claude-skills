@@ -6,7 +6,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
 SKILLS_DEST="$HOME/.claude/skills"
-CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+SHARED_MD="$HOME/.claude/shared.md"
+INSTALLED_MANIFEST="$SKILLS_DEST/.my-claude-skills-installed"
 TARGET="$1"
 
 # 색상 정의
@@ -68,12 +69,16 @@ install_skill_dir() {
     rm -rf "$dest_dir"
     mkdir -p "$dest_dir"
 
-    # 전체 내용 복사 (메타 파일 제외)
-    # 1. 스킬 .md 파일 복사
-    find "$skill_dir" -maxdepth 1 -name "*.md" -type f ! -name "README.md" ! -name "CHANGELOG.md" ! -name "LICENSE.md" ! -name "SOURCE.md" | while read -r file; do
-        local filename="$(basename "$file")"
-        cp "$file" "$dest_dir/$filename"
-        echo -e "${GREEN}✓${NC} $skill_name/$filename"
+    # 메타 파일을 제외한 전체 내용 복사 (스킬 문서가 참조하는 스크립트·예제 포함)
+    find "$skill_dir" -mindepth 1 -maxdepth 1 ! -name "README.md" ! -name "CHANGELOG.md" ! -name "LICENSE.md" ! -name "SOURCE.md" ! -name ".git" | while read -r entry; do
+        local entry_name="$(basename "$entry")"
+        cp -Rp "$entry" "$dest_dir/$entry_name"
+        if [ -d "$entry" ]; then
+            local file_count=$(find "$entry" -type f | wc -l | tr -d ' ')
+            echo -e "${GREEN}✓${NC} $skill_name/$entry_name/ (${file_count}개 파일)"
+        else
+            echo -e "${GREEN}✓${NC} $skill_name/$entry_name"
+        fi
     done
 
     # 스킬 정보 추출 (SKILL.md에서만)
@@ -87,89 +92,74 @@ install_skill_dir() {
         fi
     fi
 
-    # 2. scripts 폴더 복사
-    if [ -d "$skill_dir/scripts" ]; then
-        cp -r "$skill_dir/scripts" "$dest_dir/"
-        local script_count=$(find "$skill_dir/scripts" -type f | wc -l | tr -d ' ')
-        echo -e "${GREEN}✓${NC} $skill_name/scripts/ (${script_count}개 파일)"
-    fi
-
-    # 3. references 폴더 복사
-    if [ -d "$skill_dir/references" ]; then
-        cp -r "$skill_dir/references" "$dest_dir/"
-        local ref_count=$(find "$skill_dir/references" -type f | wc -l | tr -d ' ')
-        echo -e "${GREEN}✓${NC} $skill_name/references/ (${ref_count}개 파일)"
-    fi
-
-    # 4. assets 폴더 복사
-    if [ -d "$skill_dir/assets" ]; then
-        cp -r "$skill_dir/assets" "$dest_dir/"
-        local asset_count=$(find "$skill_dir/assets" -type f | wc -l | tr -d ' ')
-        echo -e "${GREEN}✓${NC} $skill_name/assets/ (${asset_count}개 파일)"
-    fi
+    record_installed "$skill_name"
 }
 
-# CLAUDE.md 업데이트 함수
-update_claude_md() {
+# 이 레포가 설치한 스킬만 매니페스트에 기록 (외부 동기화 스킬 보호용)
+record_installed() {
+    local skill_name="$1"
+    touch "$INSTALLED_MANIFEST"
+    grep -qxF "$skill_name" "$INSTALLED_MANIFEST" || echo "$skill_name" >> "$INSTALLED_MANIFEST"
+}
+
+trim_trailing_blank_lines() {
+    sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$SHARED_MD"
+}
+
+append_skill_section_header() {
+    printf '\n## 설치된 스킬\n\n다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요.\n' >> "$SHARED_MD"
+}
+
+# 항목 앞에 빈 줄을 두어 파일 끝에 빈 줄이 남지 않게 함
+append_skill_entry() {
+    local name="$1" desc="$2"
+    printf '\n### %s\n- 사용 상황: %s\n- 호출 방법: `/%s`\n' "$name" "$desc" "$name" >> "$SHARED_MD"
+}
+
+# shared.md 업데이트 함수
+update_shared_md() {
     local tmp_file="$SCRIPT_DIR/.installed_skills.tmp"
 
     if [ ! -f "$tmp_file" ]; then
         return
     fi
 
-    # CLAUDE.md가 없으면 생성
-    if [ ! -f "$CLAUDE_MD" ]; then
-        echo "# Global Claude Code Instructions" > "$CLAUDE_MD"
-        echo "" >> "$CLAUDE_MD"
+    if [ ! -f "$SHARED_MD" ]; then
+        rm -f "$tmp_file"
+        echo -e "${YELLOW}⚠${NC} ~/.claude/shared.md 없음 — 스킬 목록 갱신 건너뜀 (./config.sh deploy 로 먼저 받아오세요)"
+        return
     fi
 
     if [ -n "$TARGET" ]; then
         # 단일 스킬 설치: 해당 항목만 업데이트
         while IFS=$'\t' read -r name desc; do
-            # 섹션이 없으면 새로 생성
-            if ! grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
-                echo "" >> "$CLAUDE_MD"
-                echo "## 설치된 스킬" >> "$CLAUDE_MD"
-                echo "" >> "$CLAUDE_MD"
-                echo "다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요." >> "$CLAUDE_MD"
-                echo "" >> "$CLAUDE_MD"
+            if ! grep -q "^## 설치된 스킬" "$SHARED_MD"; then
+                append_skill_section_header
             fi
 
             # 기존 항목 제거 (있으면): ### name 부터 다음 빈 줄까지
-            if grep -q "^### ${name}$" "$CLAUDE_MD"; then
-                sed -i '' "/^### ${name}$/,/^$/d" "$CLAUDE_MD"
+            if grep -q "^### ${name}$" "$SHARED_MD"; then
+                sed -i '' "/^### ${name}$/,/^$/d" "$SHARED_MD"
+                trim_trailing_blank_lines
             fi
 
-            # 파일 끝에 새 항목 추가
-            echo "### $name" >> "$CLAUDE_MD"
-            echo "- 사용 상황: $desc" >> "$CLAUDE_MD"
-            echo "- 호출 방법: \`/$name\`" >> "$CLAUDE_MD"
-            echo "" >> "$CLAUDE_MD"
+            append_skill_entry "$name" "$desc"
         done < "$tmp_file"
     else
         # 전체 설치: 기존 섹션 제거 후 재생성
-        if grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
-            sed -i '' '/^## 설치된 스킬$/,$d' "$CLAUDE_MD"
-            # 파일 끝 연속 빈 줄 제거
-            sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$CLAUDE_MD"
+        if grep -q "^## 설치된 스킬" "$SHARED_MD"; then
+            sed -i '' '/^## 설치된 스킬$/,$d' "$SHARED_MD"
+            trim_trailing_blank_lines
         fi
 
-        echo "" >> "$CLAUDE_MD"
-        echo "## 설치된 스킬" >> "$CLAUDE_MD"
-        echo "" >> "$CLAUDE_MD"
-        echo "다음 스킬들이 설치되어 있습니다. 해당 상황에서 적극적으로 활용하세요." >> "$CLAUDE_MD"
-        echo "" >> "$CLAUDE_MD"
-
+        append_skill_section_header
         while IFS=$'\t' read -r name desc; do
-            echo "### $name" >> "$CLAUDE_MD"
-            echo "- 사용 상황: $desc" >> "$CLAUDE_MD"
-            echo "- 호출 방법: \`/$name\`" >> "$CLAUDE_MD"
-            echo "" >> "$CLAUDE_MD"
+            append_skill_entry "$name" "$desc"
         done < "$tmp_file"
     fi
 
     rm -f "$tmp_file"
-    echo -e "${GREEN}✓${NC} CLAUDE.md 업데이트 완료"
+    echo -e "${GREEN}✓${NC} shared.md 업데이트 완료"
 }
 
 # 임시 파일 초기화
@@ -191,16 +181,16 @@ else
     echo "전체 스킬 설치"
     echo "------------------------------------------"
 
-    # 소스에 없는 기존 스킬 제거
-    if [ -d "$SKILLS_DEST" ]; then
-        for dest_skill_dir in "$SKILLS_DEST"/*/; do
-            [ ! -d "$dest_skill_dir" ] && continue
-            local_name="$(basename "$dest_skill_dir")"
-            if [ ! -d "$SKILLS_SRC/$local_name" ]; then
-                rm -rf "$dest_skill_dir"
-                echo -e "${YELLOW}✗${NC} $local_name (소스에 없어 제거됨)"
+    # 이 레포가 설치했지만 소스에서 사라진 스킬만 제거 (매니페스트 밖의 스킬은 보존)
+    if [ -f "$INSTALLED_MANIFEST" ]; then
+        while read -r installed_name; do
+            [ -z "$installed_name" ] && continue
+            if [ ! -d "$SKILLS_SRC/$installed_name" ] && [ -d "$SKILLS_DEST/$installed_name" ]; then
+                rm -rf "$SKILLS_DEST/$installed_name"
+                echo -e "${YELLOW}✗${NC} $installed_name (소스에 없어 제거됨)"
             fi
-        done
+        done < "$INSTALLED_MANIFEST"
+        rm -f "$INSTALLED_MANIFEST"
     fi
 
     for skill_dir in "$SKILLS_SRC"/*/; do
@@ -208,8 +198,8 @@ else
     done
 fi
 
-# CLAUDE.md 업데이트
-update_claude_md
+# shared.md 업데이트
+update_shared_md
 
 echo "------------------------------------------"
 echo -e "${GREEN}설치 완료!${NC}"

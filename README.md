@@ -61,7 +61,7 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 
 ### 새 머신 셋업
 
-`./install.sh` → `./config.sh deploy` 실행. CLAUDE.md가 없으면 import 라인이 포함된 템플릿이 생성됩니다.
+`./config.sh deploy` → `./install.sh` 실행. CLAUDE.md가 없으면 import 라인이 포함된 템플릿이 생성됩니다. `install.sh`는 `~/.claude/shared.md`의 스킬 목록을 갱신하므로 deploy를 먼저 실행해야 합니다.
 
 ### 기존 머신 마이그레이션 (최초 1회)
 
@@ -82,9 +82,14 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 
 | 이름 | 원본 저장소 | 설명 |
 |------|-------------|------|
+| brainstorming | [obra/superpowers](https://github.com/obra/superpowers) | 구현 전 사용자 의도·요구사항·설계 탐색 |
+| finishing-a-development-branch | [obra/superpowers](https://github.com/obra/superpowers) | 개발 완료 후 머지·PR·정리 선택지 안내 |
+| receiving-code-review | [obra/superpowers](https://github.com/obra/superpowers) | 코드 리뷰 피드백의 기술적 검증 후 반영 |
+| requesting-code-review | [obra/superpowers](https://github.com/obra/superpowers) | 작업 완료·머지 전 코드 리뷰 요청 |
+| systematic-debugging | [obra/superpowers](https://github.com/obra/superpowers) | 버그·테스트 실패 시 체계적 원인 분석 |
+| test-driven-development | [obra/superpowers](https://github.com/obra/superpowers) | 구현 코드 작성 전 테스트 우선 작성 |
+| verification-before-completion | [obra/superpowers](https://github.com/obra/superpowers) | 완료 선언 전 검증 명령 실행·결과 확인 |
 | prompt-engineering | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | 프롬프트 엔지니어링 및 에이전트 커뮤니케이션 가이드 |
-| skill-creator | [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) | 효과적인 스킬 생성 가이드 |
-| review-implementing | [mhattingpete/claude-skills-marketplace](https://github.com/mhattingpete/claude-skills-marketplace) | 코드 리뷰 피드백 체계적 처리 및 구현 |
 | plan-generator | 로컬 생성 | 작업 계획 생성 및 관리 - 서브에이전트로 코드 분석 후 계획 문서 생성 |
 
 ## 디렉토리 구조
@@ -113,3 +118,7 @@ my-claude-skills/
 ## 스킬 저장 위치
 
 설치된 스킬은 `~/.claude/skills/` 디렉토리에 저장됩니다.
+
+- 메타 파일(`SOURCE.md`, `README.md`, `CHANGELOG.md`, `LICENSE.md`)을 제외한 스킬 디렉토리 전체가 복사됩니다
+- 설치·제거 시 `~/.claude/shared.md`의 `## 설치된 스킬` 섹션이 갱신됩니다. 레포에 반영하려면 `./config.sh backup` 후 커밋하세요
+- 이 레포가 설치한 스킬은 `~/.claude/skills/.my-claude-skills-installed`에 기록되며, 전체 설치 시 이 목록에 있는 스킬만 정리 대상입니다 (`synced/` 등 다른 경로로 설치된 스킬은 보존)
