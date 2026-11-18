@@ -41,7 +41,7 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 | 레포 파일 | 역할 | 동기화 |
 |------|------|------|
 | `home/.claude/shared.md` | 모든 머신 공통 지침 | 양방향 (backup/deploy) |
-| `home/.claude/modules/*.md` | 머신별 선택 import 조각 (linear, redmine 등) | 양방향 |
+| `home/.claude/modules/*.md` | 선택 import 조각 (github-projects 등) | 양방향 |
 | `home/.claude/hooks/*.sh` | 공유 훅 스크립트 | 양방향 |
 | `home/.claude/shared-settings.json` | 공유 설정 | deploy만 (레포 파일 직접 편집) |
 
@@ -56,7 +56,13 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 # Global Claude Code Instructions
 
 @~/.claude/shared.md
-@~/.claude/modules/linear.md   # 이 머신이 쓰는 이슈 트래커 모듈만
+@~/.claude/modules/github-projects.md   # 사용하는 모듈만
+```
+
+`github-projects.md`는 적용 조건이 있는 모듈입니다. 전역으로 import해 두고, GitHub Project를 쓰는 저장소의 CLAUDE.md(상위 디렉터리 포함)에 아래 선언을 둔 경우에만 적용됩니다:
+
+```markdown
+GitHub Project: owner <owner>, 번호 <N>
 ```
 
 ### 새 머신 셋업
@@ -68,7 +74,7 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 1. `./config.sh deploy` 실행 — `shared.md`, `modules/`가 로컬에 복사되고, settings.json에 공유 항목이 머지됨
 2. `~/.claude/CLAUDE.md`에 `@~/.claude/shared.md` 라인 추가 (deploy가 경고로 안내)
 3. CLAUDE.md에서 shared.md와 중복되는 규칙 제거, 머신 고유 규칙만 남김
-4. 사용하는 이슈 트래커 모듈 import 추가 (`linear.md` 또는 `redmine.md`)
+4. 사용하는 모듈 import 추가 (예: `github-projects.md`)
 
 ### 동작 세부
 
@@ -103,7 +109,6 @@ my-claude-skills/
 ├── uninstall.sh        # 스킬 제거
 ├── list.sh             # 스킬 목록 확인
 ├── config.sh           # 전역 설정 backup/deploy
-├── docs/plans/         # 설계 문서
 ├── home/.claude/       # 버전 관리되는 공유 설정
 │   ├── shared.md            # 모든 머신 공통 지침
 │   ├── shared-settings.json # 공유 설정 (deploy 시 딥머지)
