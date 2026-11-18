@@ -83,12 +83,10 @@ check_claude_md() {
     if [ ! -f "$claude_md" ]; then
         printf '# Global Claude Code Instructions\n\n%s\n' "$IMPORT_LINE" > "$claude_md"
         echo -e "  ${GREEN}✓${NC} CLAUDE.md 생성 (import 라인 포함)"
-        echo -e "  ${YELLOW}ℹ${NC} 이슈 트래커 모듈을 쓰면 추가: @~/.claude/modules/linear.md 또는 redmine.md"
     elif ! grep -qF "$IMPORT_LINE" "$claude_md"; then
         echo -e "  ${YELLOW}⚠${NC} CLAUDE.md에 import 라인이 없습니다. 아래 라인을 추가하세요:"
         echo "      $IMPORT_LINE"
         echo -e "  ${YELLOW}⚠${NC} 추가 후 shared.md와 중복되는 기존 규칙은 CLAUDE.md에서 제거하세요"
-        echo -e "  ${YELLOW}ℹ${NC} 이슈 트래커 모듈을 쓰면 추가: @~/.claude/modules/linear.md 또는 redmine.md"
     else
         echo -e "  ${GREEN}=${NC} CLAUDE.md import 라인 확인됨"
     fi
