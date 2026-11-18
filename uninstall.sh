@@ -8,6 +8,8 @@ SKILLS_SRC="$SCRIPT_DIR/skills"
 SKILLS_DEST="$HOME/.claude/skills"
 SHARED_MD="$HOME/.claude/shared.md"
 INSTALLED_MANIFEST="$SKILLS_DEST/.my-claude-skills-installed"
+OUTPUT_STYLES_SRC="$SCRIPT_DIR/output-styles"
+OUTPUT_STYLES_DEST="$HOME/.claude/output-styles"
 TARGET="$1"
 
 # 색상 정의
@@ -36,6 +38,23 @@ uninstall_skill() {
         grep -vxF "$skill_name" "$INSTALLED_MANIFEST" > "$INSTALLED_MANIFEST.tmp"
         mv "$INSTALLED_MANIFEST.tmp" "$INSTALLED_MANIFEST"
     fi
+}
+
+# 레포의 output-style 디렉토리에 있는 .md 파일명 기준으로 설치본 제거
+uninstall_output_style() {
+    local style_name="$1"
+    local style_file installed_file
+
+    for style_file in "$OUTPUT_STYLES_SRC/$style_name"/*.md; do
+        case "$(basename "$style_file")" in
+            README.md|CHANGELOG.md|LICENSE.md|SOURCE.md) continue ;;
+        esac
+        installed_file="$OUTPUT_STYLES_DEST/$(basename "$style_file")"
+        if [ -f "$installed_file" ]; then
+            rm -f "$installed_file"
+            echo -e "${YELLOW}✓${NC} 제거: output-style $(basename "$style_file")"
+        fi
+    done
 }
 
 # BSD/GNU sed의 -i 문법 차이를 피하기 위해 임시 파일 경유로 수정
@@ -97,9 +116,13 @@ remove_skill_section() {
 # 제거 실행
 if [ -n "$TARGET" ]; then
     # 특정 스킬만 제거
-    echo "스킬: $TARGET"
+    echo "대상: $TARGET"
     echo "------------------------------------------"
-    uninstall_skill "$TARGET"
+    if [ -d "$OUTPUT_STYLES_SRC/$TARGET" ]; then
+        uninstall_output_style "$TARGET"
+    else
+        uninstall_skill "$TARGET"
+    fi
 else
     # 전체 제거 (skills 폴더에 있는 것들만)
     echo "전체 스킬 제거"
@@ -109,6 +132,9 @@ else
             [ -d "$skill_dir" ] && uninstall_skill "$(basename "$skill_dir")"
         done
     fi
+    for style_dir in "$OUTPUT_STYLES_SRC"/*/; do
+        [ -d "$style_dir" ] && uninstall_output_style "$(basename "$style_dir")"
+    done
 fi
 
 # 빈 디렉토리 정리

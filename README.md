@@ -18,14 +18,14 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 
 ```bash
 ./install.sh              # 전체 설치
-./install.sh awesome-skill  # 특정 스킬만 설치
+./install.sh awesome-skill  # 특정 스킬·output-style만 설치
 ```
 
 ### 스킬 제거
 
 ```bash
 ./uninstall.sh              # 전체 제거
-./uninstall.sh awesome-skill  # 특정 스킬만 제거
+./uninstall.sh awesome-skill  # 특정 스킬·output-style만 제거
 ```
 
 ### 스킬 원본 업데이트
@@ -36,7 +36,7 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 ./update.sh prompt-engineering # 특정 스킬만 갱신
 ```
 
-`SOURCE.md`의 저장소·경로(또는 파일)를 기준으로 원본을 받아 비교합니다. 갱신 시 `SOURCE.md`의 수집일이 오늘 날짜로 바뀌며, `SOURCE.md`에 `커스텀 변경사항` 섹션이 있는 스킬은 덮어쓰지 않고 diff만 출력합니다. 갱신 후 `./install.sh`로 로컬에 반영합니다.
+스킬과 output-style 모두 `SOURCE.md`의 저장소·경로(또는 파일)를 기준으로 원본을 받아 비교합니다. 갱신 시 `SOURCE.md`의 수집일이 오늘 날짜로 바뀌며, `SOURCE.md`에 `커스텀 변경사항` 섹션이 있는 스킬은 덮어쓰지 않고 diff만 출력합니다. 갱신 후 `./install.sh`로 로컬에 반영합니다.
 
 ### 스킬 목록 확인
 
@@ -99,6 +99,15 @@ GitHub Project: owner <owner>, 번호 <N>
 | 이름 | 원본 저장소 | 설명 |
 |------|-------------|------|
 | prompt-engineering | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | 프롬프트 엔지니어링 및 에이전트 커뮤니케이션 가이드 |
+| eli5 | [anthropics/claude-plugins-community](https://github.com/anthropics/claude-plugins-community) | `/eli5 <주제>`로 큰 그림과 적은 글자의 HTML 설명 생성 |
+
+## 수집된 output-style 목록
+
+| 이름 | 원본 저장소 | 설명 |
+|------|-------------|------|
+| fluent-korean | [snflkd/fluent-korean](https://github.com/snflkd/fluent-korean) | 조사·어미를 생략하지 않는 명확한 한국어 문장으로 응답. `fluent-korean`(코딩 지침 유지), `fluent-korean-not-coding` 두 가지 |
+
+`output-styles/<이름>/`의 `.md` 파일은 `./install.sh`로 `~/.claude/output-styles/`에 설치됩니다. 적용할 스타일은 `home/.claude/shared-settings.json`의 `outputStyle`로 지정하며 `./config.sh deploy` 후 새 세션부터 적용됩니다.
 
 ## 디렉토리 구조
 
@@ -109,7 +118,7 @@ my-claude-skills/
 ├── add.sh              # 외부 스킬 저장소 추가
 ├── install.sh          # 스킬 설치
 ├── uninstall.sh        # 스킬 제거
-├── update.sh           # 스킬 원본 업데이트
+├── update.sh           # 스킬·output-style 원본 업데이트
 ├── list.sh             # 스킬 목록 확인
 ├── config.sh           # 전역 설정 backup/deploy
 ├── home/.claude/       # 버전 관리되는 공유 설정
@@ -117,6 +126,7 @@ my-claude-skills/
 │   ├── shared-settings.json # 공유 설정 (deploy 시 딥머지)
 │   ├── modules/             # 머신별 선택 import 조각
 │   └── hooks/               # 공유 훅 스크립트 (bash)
+├── output-styles/      # 수집된 output-style
 └── skills/             # 수집된 스킬 저장소들
     ├── skill-a/
     ├── skill-b/
@@ -128,5 +138,6 @@ my-claude-skills/
 설치된 스킬은 `~/.claude/skills/` 디렉토리에 저장됩니다.
 
 - 메타 파일(`SOURCE.md`, `README.md`, `CHANGELOG.md`, `LICENSE.md`)을 제외한 스킬 디렉토리 전체가 복사됩니다
+- 원본 라이선스가 고지를 요구하면 `LICENSE.md`로 함께 수집합니다. 설치 대상에서는 제외되며 `update.sh` 갱신 시에도 보존됩니다
 - 설치·제거 시 `~/.claude/shared.md`의 `## 설치된 스킬` 섹션이 갱신됩니다. 레포에 반영하려면 `./config.sh backup` 후 커밋하세요
 - 이 레포가 설치한 스킬은 `~/.claude/skills/.my-claude-skills-installed`에 기록되며, 전체 설치 시 이 목록에 있는 스킬만 정리 대상입니다 (`synced/` 등 다른 경로로 설치된 스킬은 보존)

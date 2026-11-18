@@ -34,3 +34,7 @@ Agent(서브에이전트) 호출 시 작업 난이도에 따라 model을 지정�
 ### prompt-engineering
 - 사용 상황: Use this skill when you writing commands, hooks, skills for Agent, or prompts for sub agents or any other LLM interaction, including optimizing prompts, improving LLM outputs, or designing production prompt templates.
 - 호출 방법: `/prompt-engineering`
+
+### eli5
+- 사용 상황: Explain a topic like I'm a 5 year old. Use when the user types /eli5 <topic> or asks for a dead-simple picture explainer of how something works.
+- 호출 방법: `/eli5`
