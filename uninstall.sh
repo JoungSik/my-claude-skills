@@ -6,7 +6,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
 SKILLS_DEST="$HOME/.claude/skills"
-CLAUDE_MD="$HOME/.claude/CLAUDE.md"
+SHARED_MD="$HOME/.claude/shared.md"
+INSTALLED_MANIFEST="$SKILLS_DEST/.my-claude-skills-installed"
 TARGET="$1"
 
 # 색상 정의
@@ -30,31 +31,37 @@ uninstall_skill() {
     else
         echo -e "${YELLOW}⚠${NC} $skill_name: 설치되어 있지 않음"
     fi
+
+    if [ -f "$INSTALLED_MANIFEST" ]; then
+        grep -vxF "$skill_name" "$INSTALLED_MANIFEST" > "$INSTALLED_MANIFEST.tmp"
+        mv "$INSTALLED_MANIFEST.tmp" "$INSTALLED_MANIFEST"
+    fi
 }
 
-# CLAUDE.md에서 단일 스킬 항목 제거
+# shared.md에서 단일 스킬 항목 제거
 remove_single_skill_entry() {
     local skill_name="$1"
 
-    if [ ! -f "$CLAUDE_MD" ]; then
+    if [ ! -f "$SHARED_MD" ]; then
         return
     fi
 
-    if grep -q "^### ${skill_name}$" "$CLAUDE_MD"; then
+    if grep -q "^### ${skill_name}$" "$SHARED_MD"; then
         # ### skill-name 부터 다음 빈 줄까지 제거
-        sed -i '' "/^### ${skill_name}$/,/^$/d" "$CLAUDE_MD"
-        echo -e "${GREEN}✓${NC} CLAUDE.md에서 '$skill_name' 항목 제거 완료"
+        sed -i '' "/^### ${skill_name}$/,/^$/d" "$SHARED_MD"
+        sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$SHARED_MD"
+        echo -e "${GREEN}✓${NC} shared.md에서 '$skill_name' 항목 제거 완료"
     fi
 }
 
-# CLAUDE.md에서 "## 설치된 스킬" 섹션 전체 제거
+# shared.md에서 "## 설치된 스킬" 섹션 전체 제거
 remove_skill_section() {
-    if [ ! -f "$CLAUDE_MD" ]; then
+    if [ ! -f "$SHARED_MD" ]; then
         return
     fi
 
     # "## 설치된 스킬" 섹션 전체 제거
-    if grep -q "^## 설치된 스킬" "$CLAUDE_MD"; then
+    if grep -q "^## 설치된 스킬" "$SHARED_MD"; then
         # 임시 파일 생성
         local tmp_file=$(mktemp)
 
@@ -63,13 +70,13 @@ remove_skill_section() {
             /^## 설치된 스킬$/ { skip=1; next }
             /^## / && skip { skip=0 }
             !skip { print }
-        ' "$CLAUDE_MD" > "$tmp_file"
+        ' "$SHARED_MD" > "$tmp_file"
 
         # 파일 끝의 빈 줄 정리
         sed -i '' -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp_file"
 
-        mv "$tmp_file" "$CLAUDE_MD"
-        echo -e "${GREEN}✓${NC} CLAUDE.md에서 스킬 섹션 제거 완료"
+        mv "$tmp_file" "$SHARED_MD"
+        echo -e "${GREEN}✓${NC} shared.md에서 스킬 섹션 제거 완료"
     fi
 }
 
@@ -91,9 +98,9 @@ else
 fi
 
 # 빈 디렉토리 정리
-find "$SKILLS_DEST" -type d -empty -delete 2>/dev/null
+find "$SKILLS_DEST" -mindepth 1 -maxdepth 1 -type d -empty -delete 2>/dev/null
 
-# CLAUDE.md 정리
+# shared.md 정리
 if [ -n "$TARGET" ]; then
     remove_single_skill_entry "$TARGET"
 else
