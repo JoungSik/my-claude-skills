@@ -28,6 +28,16 @@ Claude Code의 외부 스킬 저장소를 수집·설치하고, 전역 설정(`~
 ./uninstall.sh awesome-skill  # 특정 스킬만 제거
 ```
 
+### 스킬 원본 업데이트
+
+```bash
+./update.sh --check            # 원본 변경 여부와 diff만 확인
+./update.sh                    # 전체 스킬을 원본 최신으로 갱신
+./update.sh prompt-engineering # 특정 스킬만 갱신
+```
+
+`SOURCE.md`의 저장소·경로(또는 파일)를 기준으로 원본을 받아 비교합니다. 갱신 시 `SOURCE.md`의 수집일이 오늘 날짜로 바뀌며, `SOURCE.md`에 `커스텀 변경사항` 섹션이 있는 스킬은 덮어쓰지 않고 diff만 출력합니다. 갱신 후 `./install.sh`로 로컬에 반영합니다.
+
 ### 스킬 목록 확인
 
 ```bash
@@ -88,15 +98,7 @@ GitHub Project: owner <owner>, 번호 <N>
 
 | 이름 | 원본 저장소 | 설명 |
 |------|-------------|------|
-| brainstorming | [obra/superpowers](https://github.com/obra/superpowers) | 구현 전 사용자 의도·요구사항·설계 탐색 |
-| finishing-a-development-branch | [obra/superpowers](https://github.com/obra/superpowers) | 개발 완료 후 머지·PR·정리 선택지 안내 |
-| receiving-code-review | [obra/superpowers](https://github.com/obra/superpowers) | 코드 리뷰 피드백의 기술적 검증 후 반영 |
-| requesting-code-review | [obra/superpowers](https://github.com/obra/superpowers) | 작업 완료·머지 전 코드 리뷰 요청 |
-| systematic-debugging | [obra/superpowers](https://github.com/obra/superpowers) | 버그·테스트 실패 시 체계적 원인 분석 |
-| test-driven-development | [obra/superpowers](https://github.com/obra/superpowers) | 구현 코드 작성 전 테스트 우선 작성 |
-| verification-before-completion | [obra/superpowers](https://github.com/obra/superpowers) | 완료 선언 전 검증 명령 실행·결과 확인 |
 | prompt-engineering | [NeoLabHQ/context-engineering-kit](https://github.com/NeoLabHQ/context-engineering-kit) | 프롬프트 엔지니어링 및 에이전트 커뮤니케이션 가이드 |
-| plan-generator | 로컬 생성 | 작업 계획 생성 및 관리 - 서브에이전트로 코드 분석 후 계획 문서 생성 |
 
 ## 디렉토리 구조
 
@@ -107,6 +109,7 @@ my-claude-skills/
 ├── add.sh              # 외부 스킬 저장소 추가
 ├── install.sh          # 스킬 설치
 ├── uninstall.sh        # 스킬 제거
+├── update.sh           # 스킬 원본 업데이트
 ├── list.sh             # 스킬 목록 확인
 ├── config.sh           # 전역 설정 backup/deploy
 ├── home/.claude/       # 버전 관리되는 공유 설정
