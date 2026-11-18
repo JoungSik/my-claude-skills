@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# 수집한 스킬을 SOURCE.md의 원본 저장소 최신 내용으로 갱신
+# 수집한 스킬·output-style을 SOURCE.md의 원본 저장소 최신 내용으로 갱신
 # 사용법: ./update.sh [--check] [스킬명]
 #   --check  변경 여부와 diff만 출력하고 파일은 수정하지 않음
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
+OUTPUT_STYLES_SRC="$SCRIPT_DIR/output-styles"
 CUSTOM_SECTION_HEADER="커스텀 변경사항"
 
 RED='\033[0;31m'
@@ -52,7 +53,7 @@ clone_repo() {
 
 replace_skill_files() {
     local upstream_path="$1" skill_dir="$2"
-    find "$skill_dir" -mindepth 1 -maxdepth 1 ! -name SOURCE.md -exec rm -rf {} +
+    find "$skill_dir" -mindepth 1 -maxdepth 1 ! -name SOURCE.md ! -name LICENSE.md -exec rm -rf {} +
     if [ -d "$upstream_path" ]; then
         cp -Rp "$upstream_path/." "$skill_dir/"
     else
@@ -92,7 +93,7 @@ update_skill() {
     fi
 
     if [ -d "$upstream_path" ]; then
-        diff_output=$(diff -ru -x SOURCE.md "$skill_dir" "$upstream_path")
+        diff_output=$(diff -ru -x SOURCE.md -x LICENSE.md "$skill_dir" "$upstream_path")
     else
         diff_output=$(diff -u "$skill_dir/$(basename "$upstream_path")" "$upstream_path")
     fi
@@ -124,13 +125,16 @@ echo "  스킬 원본 업데이트$($CHECK_ONLY && echo " (확인만)")"
 echo "=========================================="
 
 if [ -n "$TARGET" ]; then
-    if [ ! -d "$SKILLS_SRC/$TARGET" ]; then
-        echo -e "${RED}오류: '$TARGET' 스킬을 찾을 수 없습니다.${NC}"
+    if [ -d "$SKILLS_SRC/$TARGET" ]; then
+        update_skill "$SKILLS_SRC/$TARGET"
+    elif [ -d "$OUTPUT_STYLES_SRC/$TARGET" ]; then
+        update_skill "$OUTPUT_STYLES_SRC/$TARGET"
+    else
+        echo -e "${RED}오류: '$TARGET' 스킬·output-style을 찾을 수 없습니다.${NC}"
         exit 1
     fi
-    update_skill "$SKILLS_SRC/$TARGET"
 else
-    for skill_dir in "$SKILLS_SRC"/*/; do
+    for skill_dir in "$SKILLS_SRC"/*/ "$OUTPUT_STYLES_SRC"/*/; do
         [ -d "$skill_dir" ] && update_skill "$skill_dir"
     done
 fi

@@ -8,6 +8,8 @@ SKILLS_SRC="$SCRIPT_DIR/skills"
 SKILLS_DEST="$HOME/.claude/skills"
 SHARED_MD="$HOME/.claude/shared.md"
 INSTALLED_MANIFEST="$SKILLS_DEST/.my-claude-skills-installed"
+OUTPUT_STYLES_SRC="$SCRIPT_DIR/output-styles"
+OUTPUT_STYLES_DEST="$HOME/.claude/output-styles"
 TARGET="$1"
 
 # 색상 정의
@@ -93,6 +95,18 @@ install_skill_dir() {
     fi
 
     record_installed "$skill_name"
+}
+
+# output-style은 디렉토리 없이 ~/.claude/output-styles/ 에 .md 파일로 설치
+install_output_style_dir() {
+    local style_dir="${1%/}"
+    local style_name="$(basename "$style_dir")"
+
+    mkdir -p "$OUTPUT_STYLES_DEST"
+    find "$style_dir" -mindepth 1 -maxdepth 1 -name "*.md" ! -name "README.md" ! -name "CHANGELOG.md" ! -name "LICENSE.md" ! -name "SOURCE.md" | while read -r style_file; do
+        cp -p "$style_file" "$OUTPUT_STYLES_DEST/"
+        echo -e "${GREEN}✓${NC} output-style $style_name/$(basename "$style_file")"
+    done
 }
 
 # 이 레포가 설치한 스킬만 매니페스트에 기록 (외부 동기화 스킬 보호용)
@@ -182,6 +196,10 @@ if [ -n "$TARGET" ]; then
         echo "스킬: $TARGET"
         echo "------------------------------------------"
         install_skill_dir "$SKILLS_SRC/$TARGET"
+    elif [ -d "$OUTPUT_STYLES_SRC/$TARGET" ]; then
+        echo "output-style: $TARGET"
+        echo "------------------------------------------"
+        install_output_style_dir "$OUTPUT_STYLES_SRC/$TARGET"
     else
         echo -e "${RED}오류: '$TARGET' 스킬을 찾을 수 없습니다.${NC}"
         exit 1
@@ -205,6 +223,10 @@ else
 
     for skill_dir in "$SKILLS_SRC"/*/; do
         [ -d "$skill_dir" ] && install_skill_dir "$skill_dir"
+    done
+
+    for style_dir in "$OUTPUT_STYLES_SRC"/*/; do
+        [ -d "$style_dir" ] && install_output_style_dir "$style_dir"
     done
 fi
 
